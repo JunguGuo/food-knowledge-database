@@ -791,6 +791,7 @@ body {
 }
 
 .category-card {
+  position: relative;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -859,9 +860,39 @@ body {
 }
 
 .category-card-actions {
+  display: none;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  gap: 2px;
+}
+
+.category-card:hover .category-card-actions {
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+}
+
+.category-card-actions .action-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.category-card-actions .action-icon-btn:hover {
+  background: var(--bg-root);
+  color: var(--text-primary);
+}
+
+.category-card-actions .action-icon-btn.danger:hover {
+  background: var(--status-avoid-bg);
+  color: var(--status-avoid);
 }
 
 @media (max-width: 768px) {
@@ -1717,6 +1748,74 @@ select.form-input { cursor: pointer; }
   min-height: 400px;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+/* Toolbar select dropdowns */
+.toolbar-select {
+  appearance: none;
+  background: var(--bg-surface) url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237A756D' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 6px 28px 6px 12px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.toolbar-select:hover {
+  border-color: var(--border-strong);
+}
+
+.toolbar-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Geocode button */
+.geocode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px !important;
+  padding: 3px 9px !important;
+  color: var(--accent-text) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--bg-surface) !important;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.geocode-btn:hover:not(:disabled) {
+  background: var(--accent-light) !important;
+  border-color: var(--accent) !important;
+}
+
+.geocode-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.geocode-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: geocode-spin 0.6s linear infinite;
+}
+
+@keyframes geocode-spin {
+  to { transform: rotate(360deg); }
+}
+
+.geocode-error {
+  font-size: 11.5px;
+  color: var(--status-avoid);
+  margin-top: 4px;
 }
 
 /* Responsive */

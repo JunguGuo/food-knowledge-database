@@ -129,7 +129,7 @@ app/src/
 - Sort by highest rated, name, or recently updated
 - **Map view** — toggle between card grid and interactive map (Leaflet + OpenStreetMap) showing restaurants with coordinates as markers; click a marker for a popup with name, rating, tags, and a link to the detail page
 - Add Restaurant button opens modal with two modes:
-  - **Manual Entry** — form with all fields including optional latitude/longitude for map placement
+  - **Manual Entry** — form with all fields including optional latitude/longitude for map placement; a **"Get Coordinates"** button appears next to the Location field and auto-fills lat/lng via OpenStreetMap Nominatim geocoding
   - **Paste JSON** — paste a full restaurant with menu items, with schema placeholder and real-time validation
 
 ### Restaurant Detail (`/restaurants/[id]`)
@@ -137,15 +137,15 @@ app/src/
 - Edit and delete restaurant
 - **Two view modes for menu items:**
   - **List view** — table with columns for item, category, rating, status, tags, notes, and price
-  - **Category view** — items grouped by category in a card grid with a sticky sidebar for quick navigation between categories; clicking a category scrolls to that section
+  - **Category view** — items grouped by category in a card grid with a sticky sidebar for quick navigation between categories; clicking a category scrolls to that section. Edit/delete actions appear as icon-only buttons (pen/trash) on hover in the bottom-right corner of each card
 - Toggle between views via list/grid icons
-- Filter menu items by status (All, Favorites, Avoid)
+- **Dropdown filters** for status, tags, and rating (minimum threshold, e.g. "4★+" shows 4- and 5-star items)
 - Descriptions shown as subdued text on category view cards when available
 - Add Menu Item button
 
 ### Menu Items (`/menu-items`)
 - Global view of all menu items across restaurants
-- Filter chips: All, Favorites, 4-star+, tag-based, status-based
+- **Dropdown filters** for status (all statuses from the data model) and tags (dynamically populated from items)
 - Search across item name, notes, tags, and restaurant name
 - Sort by rating, name, status, or recently updated
 - Click-through to parent restaurant
@@ -197,4 +197,4 @@ The following are intentional differences from the original build prompt:
 
 5. **Dashboard omits explicit "Avoid" section** — the spec listed avoid items on the dashboard. These are accessible via the sidebar's "Avoid" quick filter (`/menu-items?status=avoid`) rather than a dedicated dashboard section, keeping the dashboard focused on positive/aspirational content.
 
-6. **Filtering by rating** — the spec mentioned filtering restaurants by rating. The current implementation filters via tag/label chips and sort order rather than a dedicated rating filter dropdown. Rating-based sorting achieves the same goal.
+6. **Filtering by rating** — the restaurant detail page includes a dedicated rating filter dropdown (minimum threshold) for menu items. The restaurants list page uses sort order for rating-based browsing.

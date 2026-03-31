@@ -8,7 +8,7 @@ import {
   updateRestaurant, deleteRestaurant,
   createMenuItem, updateMenuItem, deleteMenuItem,
 } from "@/lib/store";
-import { Restaurant, MenuItem, MenuItemStatus } from "@/lib/types";
+import { Restaurant, MenuItem, MenuItemStatus, STATUS_LABELS } from "@/lib/types";
 import { RatingDisplay } from "@/components/Rating";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LabelPill } from "@/components/LabelPill";
@@ -24,7 +24,9 @@ export default function RestaurantDetailPage() {
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<MenuItemStatus | "">("");
+  const [tagFilter, setTagFilter] = useState<string>("");
+  const [ratingFilter, setRatingFilter] = useState<number | "">("")
   const [showEditRestaurant, setShowEditRestaurant] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -42,14 +44,16 @@ export default function RestaurantDetailPage() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const allTags = useMemo(() => Array.from(new Set(items.flatMap((m) => m.tags))).sort(), [items]);
+
   const filteredItems = useMemo(() => {
-    if (statusFilter === "All") return items;
     return items.filter((m) => {
-      if (statusFilter === "Favorites") return m.status === "favorite";
-      if (statusFilter === "Avoid") return m.status === "avoid";
+      if (statusFilter && m.status !== statusFilter) return false;
+      if (tagFilter && !m.tags.some((t) => t.toLowerCase() === tagFilter.toLowerCase())) return false;
+      if (ratingFilter !== "" && (m.rating === null || m.rating < ratingFilter)) return false;
       return true;
     });
-  }, [items, statusFilter]);
+  }, [items, statusFilter, tagFilter, ratingFilter]);
 
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, MenuItem[]> = {};
@@ -109,7 +113,7 @@ export default function RestaurantDetailPage() {
         <div className="menu-items-title">
           Menu Items <span style={{ fontFamily: "var(--font-body)", fontWeight: 400, fontSize: 14, color: "var(--text-secondary)" }}>· {items.length} tracked</span>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <div className="view-toggle">
             <button
               className={`view-toggle-btn${viewMode === "list" ? " active" : ""}`}
@@ -126,18 +130,35 @@ export default function RestaurantDetailPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             </button>
           </div>
-          {["All", "Favorites", "Avoid"].map((f) => (
-            <div key={f} className={`chip${statusFilter === f ? " active" : ""}`} style={{ padding: "3px 10px", fontSize: "11.5px" }} onClick={() => setStatusFilter(f)}>{f}</div>
-          ))}
+          <select className="toolbar-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as MenuItemStatus | "")}>
+            <option value="">All Statuses</option>
+            {Object.entries(STATUS_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+          <select className="toolbar-select" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+            <option value="">All Tags</option>
+            {allTags.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select className="toolbar-select" value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value === "" ? "" : Number(e.target.value))}>
+            <option value="">All Ratings</option>
+            <option value="5">5★</option>
+            <option value="4">4★+</option>
+            <option value="3">3★+</option>
+            <option value="2">2★+</option>
+            <option value="1">1★+</option>
+          </select>
         </div>
       </div>
 
       {filteredItems.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">📋</div>
-          <div className="empty-state-title">{statusFilter !== "All" ? "No matching items" : "No menu items yet"}</div>
-          <div className="empty-state-desc">{statusFilter !== "All" ? "Try a different filter" : "Track your first dish from this restaurant"}</div>
-          {statusFilter === "All" && <button className="btn btn-primary" onClick={() => setShowAddItem(true)}>Add Menu Item</button>}
+          <div className="empty-state-title">{(statusFilter || tagFilter || ratingFilter !== "") ? "No matching items" : "No menu items yet"}</div>
+          <div className="empty-state-desc">{(statusFilter || tagFilter || ratingFilter !== "") ? "Try adjusting your filters" : "Track your first dish from this restaurant"}</div>
+          {!statusFilter && !tagFilter && ratingFilter === "" && <button className="btn btn-primary" onClick={() => setShowAddItem(true)}>Add Menu Item</button>}
         </div>
       ) : viewMode === "list" ? (
         <table className="items-table">
@@ -217,8 +238,12 @@ export default function RestaurantDetailPage() {
                       {m.description && <div className="category-card-desc">{m.description}</div>}
                       {m.notes && <div className="category-card-note">{m.notes}</div>}
                       <div className="category-card-actions">
-                        <button className="btn btn-ghost" style={{ padding: "4px 8px", fontSize: 12 }} onClick={() => setEditingItem(m)}>Edit</button>
-                        <button className="btn btn-ghost" style={{ padding: "4px 8px", fontSize: 12, color: "var(--status-avoid)" }} onClick={() => setConfirmDelete({ type: "item", id: m.id })}>Delete</button>
+                        <button className="action-icon-btn" onClick={() => setEditingItem(m)} title="Edit">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        </button>
+                        <button className="action-icon-btn danger" onClick={() => setConfirmDelete({ type: "item", id: m.id })} title="Delete">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
                       </div>
                     </div>
                   ))}

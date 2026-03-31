@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getRestaurants, getMenuItems } from "@/lib/store";
 import { useCityContext } from "@/lib/cityContext";
-import { Restaurant, MenuItem, MenuItemStatus } from "@/lib/types";
+import { Restaurant, MenuItem, MenuItemStatus, STATUS_LABELS } from "@/lib/types";
 import { RatingDisplay } from "@/components/Rating";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LabelPill } from "@/components/LabelPill";
@@ -20,12 +20,8 @@ function MenuItemsContent() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState("");
-  const [activeChip, setActiveChip] = useState<string>(
-    initialStatus === "favorite" ? "Favorites Only"
-    : initialStatus === "avoid" ? "Avoid"
-    : initialStatus === "want_to_try" ? "Want to Try"
-    : "All"
-  );
+  const [statusFilter, setStatusFilter] = useState<MenuItemStatus | "">(initialStatus ?? "");
+  const [tagFilter, setTagFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("rating");
 
   const reload = useCallback(() => {
@@ -42,7 +38,8 @@ function MenuItemsContent() {
 
   const restaurantMap = Object.fromEntries(allRestaurants.map((r) => [r.id, r]));
 
-  const chips = ["All", "Favorites Only", "4★+ Rated", "Spicy", "Comfort", "Want to Try", "Avoid"];
+  // Collect all unique tags from visible menu items for the tag dropdown
+  const allTags = Array.from(new Set(menuItems.flatMap((m) => m.tags))).sort();
 
   let filtered = menuItems.filter((m) => {
     if (search) {
@@ -54,12 +51,8 @@ function MenuItemsContent() {
         !(restaurantMap[m.restaurantId]?.name.toLowerCase().includes(q))
       ) return false;
     }
-    if (activeChip === "Favorites Only") return m.status === "favorite";
-    if (activeChip === "4★+ Rated") return m.rating !== null && m.rating >= 4;
-    if (activeChip === "Spicy") return m.tags.some((t) => t.toLowerCase().includes("spicy"));
-    if (activeChip === "Comfort") return m.tags.some((t) => t.toLowerCase().includes("comfort"));
-    if (activeChip === "Want to Try") return m.status === "want_to_try";
-    if (activeChip === "Avoid") return m.status === "avoid";
+    if (statusFilter && m.status !== statusFilter) return false;
+    if (tagFilter && !m.tags.some((t) => t.toLowerCase() === tagFilter.toLowerCase())) return false;
     return true;
   });
 
@@ -84,9 +77,18 @@ function MenuItemsContent() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" placeholder="Search all menu items..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        {chips.map((c) => (
-          <div key={c} className={`chip${activeChip === c ? " active" : ""}`} onClick={() => setActiveChip(activeChip === c ? "All" : c)}>{c}</div>
-        ))}
+        <select className="toolbar-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as MenuItemStatus | "")}>
+          <option value="">All Statuses</option>
+          {Object.entries(STATUS_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+        <select className="toolbar-select" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+          <option value="">All Tags</option>
+          {allTags.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
         <div className="sort-dropdown" onClick={() => setSortKey(sortKey === "rating" ? "name" : sortKey === "name" ? "status" : "rating")}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           Sort: {sortKey === "rating" ? "Rating" : sortKey === "name" ? "Name" : "Status"}

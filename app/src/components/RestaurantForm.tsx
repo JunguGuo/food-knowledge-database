@@ -221,6 +221,32 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
   const [location, setLocation] = useState(restaurant?.location ?? "");
   const [latitude, setLatitude] = useState(restaurant?.latitude?.toString() ?? "");
   const [longitude, setLongitude] = useState(restaurant?.longitude?.toString() ?? "");
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState("");
+
+  async function handleGeocode() {
+    const query = location.trim();
+    if (!query) return;
+    setGeocoding(true);
+    setGeocodeError("");
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
+        { headers: { "Accept": "application/json" } }
+      );
+      const data = await res.json();
+      if (data.length === 0) {
+        setGeocodeError("No results found. Try a more specific address.");
+        return;
+      }
+      setLatitude(parseFloat(data[0].lat).toFixed(6));
+      setLongitude(parseFloat(data[0].lon).toFixed(6));
+    } catch {
+      setGeocodeError("Geocoding failed. Check your connection.");
+    } finally {
+      setGeocoding(false);
+    }
+  }
 
   // JSON paste state
   const [jsonText, setJsonText] = useState("");
@@ -381,17 +407,35 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Location (optional)</label>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Location (optional)</label>
+                  {location.trim() && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost geocode-btn"
+                      onClick={handleGeocode}
+                      disabled={geocoding}
+                    >
+                      {geocoding ? (
+                        <span className="geocode-spinner" />
+                      ) : (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                      )}
+                      {geocoding ? "Locating..." : "Get Coordinates"}
+                    </button>
+                  )}
+                </div>
                 <input className="form-input" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Downtown, 123 Main St" />
+                {geocodeError && <div className="geocode-error">{geocodeError}</div>}
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Latitude (optional)</label>
-                  <input className="form-input" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="e.g. 41.4993" />
+                  <label className="form-label">Latitude</label>
+                  <input className="form-input" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Auto-filled or manual" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Longitude (optional)</label>
-                  <input className="form-input" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="e.g. -81.6944" />
+                  <label className="form-label">Longitude</label>
+                  <input className="form-input" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Auto-filled or manual" />
                 </div>
               </div>
               <div className="form-group">
