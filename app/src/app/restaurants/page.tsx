@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import Link from "next/link";
 import { getRestaurants, getMenuItems, createRestaurant, createMenuItem } from "@/lib/store";
 import { useCityContext } from "@/lib/cityContext";
@@ -11,7 +11,10 @@ import { RestaurantForm } from "@/components/RestaurantForm";
 import { showToast } from "@/components/Toast";
 import { timeAgo } from "@/lib/utils";
 
+const RestaurantMap = lazy(() => import("@/components/RestaurantMap").then((m) => ({ default: m.RestaurantMap })));
+
 type SortKey = "rating" | "name" | "updated";
+type ViewMode = "list" | "map";
 
 export default function RestaurantsPage() {
   const { selectedCity } = useCityContext();
@@ -20,6 +23,7 @@ export default function RestaurantsPage() {
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string>("All");
   const [sortKey, setSortKey] = useState<SortKey>("rating");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [showForm, setShowForm] = useState(false);
 
   const reload = useCallback(() => {
@@ -81,6 +85,14 @@ export default function RestaurantsPage() {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           Sort: {sortKey === "rating" ? "Highest Rated" : sortKey === "name" ? "Name" : "Recently Updated"}
         </div>
+        <div className="view-toggle">
+          <button className={`view-toggle-btn${viewMode === "list" ? " active" : ""}`} onClick={() => setViewMode("list")} title="List view">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button className={`view-toggle-btn${viewMode === "map" ? " active" : ""}`} onClick={() => setViewMode("map")} title="Map view">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -92,6 +104,10 @@ export default function RestaurantsPage() {
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>Add Restaurant</button>
           )}
         </div>
+      ) : viewMode === "map" ? (
+        <Suspense fallback={<div className="map-loading">Loading map...</div>}>
+          <RestaurantMap restaurants={filtered} itemCounts={itemCounts} />
+        </Suspense>
       ) : (
         <div className="cards-grid">
           {filtered.map((r) => (

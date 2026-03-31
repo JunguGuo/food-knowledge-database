@@ -15,6 +15,7 @@ A local-first personal food intelligence system for managing restaurant and menu
 
 - **Framework:** Next.js 16 (App Router) with React 19 and TypeScript
 - **Styling:** Tailwind CSS 4 with custom design tokens (see `globals.css`)
+- **Maps:** Leaflet + react-leaflet with OpenStreetMap tiles (no API key required)
 - **Persistence:** Browser localStorage (client-side only, no backend)
 - **State Management:** React Context API (CityProvider, TagProvider)
 - **Dev Server:** Turbopack (`next dev --turbopack`)
@@ -64,6 +65,7 @@ app/src/
 │   ├── TagInput.tsx            # Tag input with autocomplete suggestions
 │   ├── StatusBadge.tsx         # Menu item status indicator
 │   ├── LabelPill.tsx           # Restaurant label with emoji
+│   ├── RestaurantMap.tsx        # Interactive map view (Leaflet/OpenStreetMap)
 │   ├── ConfirmDialog.tsx       # Delete confirmation modal
 │   └── Toast.tsx               # Toast notification system
 ├── lib/
@@ -89,6 +91,8 @@ app/src/
 | overallRating | number \| null | 1-5 scale |
 | notes | string | Free-text impressions |
 | location | string | Optional address/district |
+| latitude | number \| null | GPS latitude for map view |
+| longitude | number \| null | GPS longitude for map view |
 | dateAdded | string | ISO timestamp |
 | lastUpdated | string | ISO timestamp |
 
@@ -123,8 +127,9 @@ app/src/
 - Searchable, filterable card grid
 - Filter by cuisine tag or label via chips
 - Sort by highest rated, name, or recently updated
+- **Map view** — toggle between card grid and interactive map (Leaflet + OpenStreetMap) showing restaurants with coordinates as markers; click a marker for a popup with name, rating, tags, and a link to the detail page
 - Add Restaurant button opens modal with two modes:
-  - **Manual Entry** — form with all fields
+  - **Manual Entry** — form with all fields including optional latitude/longitude for map placement
   - **Paste JSON** — paste a full restaurant with menu items, with schema placeholder and real-time validation
 
 ### Restaurant Detail (`/restaurants/[id]`)

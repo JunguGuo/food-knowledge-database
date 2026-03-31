@@ -15,6 +15,8 @@ const JSON_SCHEMA_PLACEHOLDER = `{
   "overallRating": 4,
   "notes": "Great food, fast service",
   "location": "123 Main St",
+  "latitude": 41.4993,
+  "longitude": -81.6944,
   "menuItems": [
     {
       "name": "Kung Pao Chicken",
@@ -33,7 +35,7 @@ Status options: "not_tried" | "favorite" | "liked" | "neutral" | "avoid" | "want
   Default status is "not_tried" if omitted
 Rating: 1-5 or null
 Price: number or null
-Fields "menuItems", "labels", "notes", "location", "overallRating", "description" are optional`;
+Fields "menuItems", "labels", "notes", "location", "latitude", "longitude", "overallRating", "description" are optional`;
 
 type TabMode = "form" | "json";
 
@@ -45,6 +47,8 @@ interface JsonRestaurant {
   overallRating: number | null;
   notes: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   menuItems: JsonMenuItem[];
 }
 
@@ -97,6 +101,12 @@ function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string
   }
   if (obj.location !== undefined && typeof obj.location !== "string") {
     errors.push('"location" must be a string');
+  }
+  if (obj.latitude !== undefined && obj.latitude !== null && typeof obj.latitude !== "number") {
+    errors.push('"latitude" must be a number or null');
+  }
+  if (obj.longitude !== undefined && obj.longitude !== null && typeof obj.longitude !== "number") {
+    errors.push('"longitude" must be a number or null');
   }
 
   if (obj.menuItems !== undefined) {
@@ -151,6 +161,8 @@ function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string
       overallRating: (obj.overallRating as number | null | undefined) ?? null,
       notes: (obj.notes as string | undefined) ?? "",
       location: (obj.location as string | undefined) ?? "",
+      latitude: (obj.latitude as number | null | undefined) ?? null,
+      longitude: (obj.longitude as number | null | undefined) ?? null,
       menuItems: ((obj.menuItems as JsonMenuItem[] | undefined) ?? []).map((mi) => ({
         name: mi.name.trim(),
         category: mi.category ?? "",
@@ -176,6 +188,8 @@ interface RestaurantFormProps {
     overallRating: number | null;
     notes: string;
     location: string;
+    latitude: number | null;
+    longitude: number | null;
   }) => void;
   onSaveWithMenuItems?: (data: {
     name: string;
@@ -185,6 +199,8 @@ interface RestaurantFormProps {
     overallRating: number | null;
     notes: string;
     location: string;
+    latitude: number | null;
+    longitude: number | null;
     menuItems: Omit<MenuItem, "id" | "restaurantId" | "dateAdded" | "lastUpdated">[];
   }) => void;
   onClose: () => void;
@@ -203,6 +219,8 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
   const [overallRating, setOverallRating] = useState<number | null>(restaurant?.overallRating ?? null);
   const [notes, setNotes] = useState(restaurant?.notes ?? "");
   const [location, setLocation] = useState(restaurant?.location ?? "");
+  const [latitude, setLatitude] = useState(restaurant?.latitude?.toString() ?? "");
+  const [longitude, setLongitude] = useState(restaurant?.longitude?.toString() ?? "");
 
   // JSON paste state
   const [jsonText, setJsonText] = useState("");
@@ -232,7 +250,9 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
     if (showCustomCity && customCity.trim()) {
       addCity(customCity.trim());
     }
-    onSave({ name: name.trim(), city: finalCity, cuisineTags, labels, overallRating, notes, location });
+    const lat = latitude.trim() ? parseFloat(latitude) : null;
+    const lng = longitude.trim() ? parseFloat(longitude) : null;
+    onSave({ name: name.trim(), city: finalCity, cuisineTags, labels, overallRating, notes, location, latitude: lat, longitude: lng });
   }
 
   function handleJsonChange(text: string) {
@@ -363,6 +383,16 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
               <div className="form-group">
                 <label className="form-label">Location (optional)</label>
                 <input className="form-input" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Downtown, 123 Main St" />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Latitude (optional)</label>
+                  <input className="form-input" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="e.g. 41.4993" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Longitude (optional)</label>
+                  <input className="form-input" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="e.g. -81.6944" />
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Notes</label>

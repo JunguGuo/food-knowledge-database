@@ -7,6 +7,8 @@ export interface Restaurant {
   overallRating: number | null;
   notes: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   dateAdded: string;
   lastUpdated: string;
 }
