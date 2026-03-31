@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm run:*)",
+      "Bash(find /Users/junguguo/Documents/Vibe Code/food-knowledge-database -maxdepth 2 -name *.css -o -name *.md -o -name *.html)",
+      "Bash(find /Users/junguguo/Documents/Vibe Code/food-knowledge-database -maxdepth 2 -type f \\\\\\(-name README* -o -name CLAUDE* -o -name *.md \\\\\\))"
+    ]
+  }
+}
