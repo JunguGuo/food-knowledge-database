@@ -15,6 +15,7 @@ interface MenuItemFormProps {
     status: MenuItemStatus;
     tags: string[];
     notes: string;
+    description: string;
     price: number | null;
   }) => void;
   onClose: () => void;
@@ -25,9 +26,10 @@ export function MenuItemForm({ item, onSave, onClose }: MenuItemFormProps) {
   const [name, setName] = useState(item?.name ?? "");
   const [category, setCategory] = useState(item?.category ?? "");
   const [rating, setRating] = useState<number | null>(item?.rating ?? null);
-  const [status, setStatus] = useState<MenuItemStatus>(item?.status ?? "neutral");
+  const [status, setStatus] = useState<MenuItemStatus>(item?.status ?? "not_tried");
   const [tags, setTags] = useState<string[]>(item?.tags ?? []);
   const [notes, setNotes] = useState(item?.notes ?? "");
+  const [description, setDescription] = useState(item?.description ?? "");
   const [priceStr, setPriceStr] = useState(item?.price != null ? item.price.toString() : "");
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function MenuItemForm({ item, onSave, onClose }: MenuItemFormProps) {
     e.preventDefault();
     if (!name.trim()) return;
     const price = priceStr ? parseFloat(priceStr) : null;
-    onSave({ name: name.trim(), category, rating, status, tags, notes, price: price !== null && isNaN(price) ? null : price });
+    onSave({ name: name.trim(), category, rating, status, tags, notes, description, price: price !== null && isNaN(price) ? null : price });
   }
 
   return (
@@ -74,6 +76,7 @@ export function MenuItemForm({ item, onSave, onClose }: MenuItemFormProps) {
               <div className="form-group">
                 <label className="form-label">Status</label>
                 <select className="form-input" value={status} onChange={(e) => setStatus(e.target.value as MenuItemStatus)}>
+                  <option value="not_tried">Not Tried</option>
                   <option value="favorite">Favorite</option>
                   <option value="liked">Liked</option>
                   <option value="neutral">Neutral</option>
@@ -85,6 +88,10 @@ export function MenuItemForm({ item, onSave, onClose }: MenuItemFormProps) {
             <div className="form-group">
               <label className="form-label">Tags</label>
               <TagInput value={tags} onChange={setTags} suggestions={tagOptions} placeholder="e.g. Spicy, Comfort" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <textarea className="form-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this dish? e.g. Wok-tossed lamb with dried chilies and Sichuan peppercorns" />
             </div>
             <div className="form-group">
               <label className="form-label">Notes</label>

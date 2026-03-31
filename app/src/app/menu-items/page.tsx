@@ -66,7 +66,7 @@ function MenuItemsContent() {
   filtered = [...filtered].sort((a, b) => {
     if (sortKey === "rating") return (b.rating ?? 0) - (a.rating ?? 0);
     if (sortKey === "name") return a.name.localeCompare(b.name);
-    const order: Record<MenuItemStatus, number> = { favorite: 0, liked: 1, neutral: 2, want_to_try: 3, avoid: 4 };
+    const order: Record<MenuItemStatus, number> = { favorite: 0, liked: 1, neutral: 2, not_tried: 3, want_to_try: 4, avoid: 5 };
     return order[a.status] - order[b.status];
   });
 

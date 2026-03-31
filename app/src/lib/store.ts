@@ -5,7 +5,7 @@ import { seedRestaurants, seedMenuItems } from "./seed";
 
 const STORAGE_KEY = "food-knowledge-db";
 // Bump this when the data schema changes to force a reset to fresh seed data.
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const DB_VERSION_KEY = "food-knowledge-db-version";
 
 function generateId(): string {

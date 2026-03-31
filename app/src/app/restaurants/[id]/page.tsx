@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -29,6 +29,9 @@ export default function RestaurantDetailPage() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "restaurant" | "item"; id: string } | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "category">("list");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const reload = useCallback(() => {
     const r = getRestaurantById(id);
@@ -39,15 +42,33 @@ export default function RestaurantDetailPage() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  if (!restaurant) return null;
+  const filteredItems = useMemo(() => {
+    if (statusFilter === "All") return items;
+    return items.filter((m) => {
+      if (statusFilter === "Favorites") return m.status === "favorite";
+      if (statusFilter === "Avoid") return m.status === "avoid";
+      return true;
+    });
+  }, [items, statusFilter]);
 
-  const filteredItems = statusFilter === "All"
-    ? items
-    : items.filter((m) => {
-        if (statusFilter === "Favorites") return m.status === "favorite";
-        if (statusFilter === "Avoid") return m.status === "avoid";
-        return true;
-      });
+  const groupedByCategory = useMemo(() => {
+    const groups: Record<string, MenuItem[]> = {};
+    for (const item of filteredItems) {
+      const cat = item.category || "Uncategorized";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    }
+    return groups;
+  }, [filteredItems]);
+
+  const categories = useMemo(() => Object.keys(groupedByCategory).sort(), [groupedByCategory]);
+
+  const scrollToCategory = useCallback((cat: string) => {
+    setActiveCategory(cat);
+    categoryRefs.current[cat]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  if (!restaurant) return null;
 
   return (
     <div className="screen">
@@ -88,7 +109,23 @@ export default function RestaurantDetailPage() {
         <div className="menu-items-title">
           Menu Items <span style={{ fontFamily: "var(--font-body)", fontWeight: 400, fontSize: 14, color: "var(--text-secondary)" }}>· {items.length} tracked</span>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn${viewMode === "list" ? " active" : ""}`}
+              onClick={() => setViewMode("list")}
+              title="List view"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <button
+              className={`view-toggle-btn${viewMode === "category" ? " active" : ""}`}
+              onClick={() => setViewMode("category")}
+              title="Category view"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+          </div>
           {["All", "Favorites", "Avoid"].map((f) => (
             <div key={f} className={`chip${statusFilter === f ? " active" : ""}`} style={{ padding: "3px 10px", fontSize: "11.5px" }} onClick={() => setStatusFilter(f)}>{f}</div>
           ))}
@@ -102,7 +139,7 @@ export default function RestaurantDetailPage() {
           <div className="empty-state-desc">{statusFilter !== "All" ? "Try a different filter" : "Track your first dish from this restaurant"}</div>
           {statusFilter === "All" && <button className="btn btn-primary" onClick={() => setShowAddItem(true)}>Add Menu Item</button>}
         </div>
-      ) : (
+      ) : viewMode === "list" ? (
         <table className="items-table">
           <thead>
             <tr>
@@ -140,6 +177,56 @@ export default function RestaurantDetailPage() {
             ))}
           </tbody>
         </table>
+      ) : (
+        <div className="category-view">
+          <nav className="category-sidebar">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                className={`category-sidebar-btn${activeCategory === cat ? " active" : ""}`}
+                onClick={() => scrollToCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </nav>
+          <div className="category-content">
+            {categories.map((cat) => (
+              <div
+                key={cat}
+                ref={(el) => { categoryRefs.current[cat] = el; }}
+                className="category-section"
+              >
+                <h3 className="category-section-title">{cat}</h3>
+                <div className="category-grid">
+                  {groupedByCategory[cat].map((m) => (
+                    <div key={m.id} className="category-card">
+                      <div className="category-card-header">
+                        <span className="category-card-name">{m.name}</span>
+                        {m.price != null && <span className="category-card-price">${m.price.toFixed(2)}</span>}
+                      </div>
+                      <div className="category-card-meta">
+                        <RatingDisplay value={m.rating} />
+                        <StatusBadge status={m.status} />
+                      </div>
+                      {m.tags.length > 0 && (
+                        <div className="category-card-tags">
+                          {m.tags.map((t) => <LabelPill key={t} label={t} />)}
+                        </div>
+                      )}
+                      {m.description && <div className="category-card-desc">{m.description}</div>}
+                      {m.notes && <div className="category-card-note">{m.notes}</div>}
+                      <div className="category-card-actions">
+                        <button className="btn btn-ghost" style={{ padding: "4px 8px", fontSize: 12 }} onClick={() => setEditingItem(m)}>Edit</button>
+                        <button className="btn btn-ghost" style={{ padding: "4px 8px", fontSize: 12, color: "var(--status-avoid)" }} onClick={() => setConfirmDelete({ type: "item", id: m.id })}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {showEditRestaurant && (

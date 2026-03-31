@@ -23,15 +23,17 @@ const JSON_SCHEMA_PLACEHOLDER = `{
       "status": "favorite",
       "tags": ["Spicy"],
       "notes": "Best in town",
+      "description": "Wok-fried chicken with peanuts and dried chilies",
       "price": 15.99
     }
   ]
 }
 
-Status options: "favorite" | "liked" | "neutral" | "avoid" | "want_to_try"
+Status options: "not_tried" | "favorite" | "liked" | "neutral" | "avoid" | "want_to_try"
+  Default status is "not_tried" if omitted
 Rating: 1-5 or null
 Price: number or null
-Fields "menuItems", "labels", "notes", "location", "overallRating" are optional`;
+Fields "menuItems", "labels", "notes", "location", "overallRating", "description" are optional`;
 
 type TabMode = "form" | "json";
 
@@ -53,10 +55,11 @@ interface JsonMenuItem {
   status: MenuItem["status"];
   tags: string[];
   notes: string;
+  description: string;
   price: number | null;
 }
 
-const VALID_STATUSES = ["favorite", "liked", "neutral", "avoid", "want_to_try"];
+const VALID_STATUSES = ["not_tried", "favorite", "liked", "neutral", "avoid", "want_to_try"];
 
 function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string[]; parsed?: JsonRestaurant } {
   const errors: string[] = [];
@@ -125,6 +128,9 @@ function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string
             errors.push(`menuItems[${i}]: "tags" must be an array of strings`);
           }
         }
+        if (mi.description !== undefined && typeof mi.description !== "string") {
+          errors.push(`menuItems[${i}]: "description" must be a string`);
+        }
         if (mi.price !== undefined && mi.price !== null && typeof mi.price !== "number") {
           errors.push(`menuItems[${i}]: "price" must be a number or null`);
         }
@@ -149,9 +155,10 @@ function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string
         name: mi.name.trim(),
         category: mi.category ?? "",
         rating: mi.rating ?? null,
-        status: mi.status ?? "neutral",
+        status: mi.status ?? "not_tried",
         tags: mi.tags ?? [],
         notes: mi.notes ?? "",
+        description: mi.description ?? "",
         price: mi.price ?? null,
       })),
     },

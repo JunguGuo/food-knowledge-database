@@ -17,9 +17,10 @@ export interface MenuItem {
   name: string;
   category: string;
   rating: number | null;
-  status: "favorite" | "liked" | "neutral" | "avoid" | "want_to_try";
+  status: "not_tried" | "favorite" | "liked" | "neutral" | "avoid" | "want_to_try";
   tags: string[];
   notes: string;
+  description: string;
   price: number | null;
   dateAdded: string;
   lastUpdated: string;
@@ -33,6 +34,7 @@ export interface AppData {
 export type MenuItemStatus = MenuItem["status"];
 
 export const STATUS_LABELS: Record<MenuItemStatus, string> = {
+  not_tried: "Not Tried",
   favorite: "Favorite",
   liked: "Liked",
   neutral: "Neutral",
@@ -41,6 +43,7 @@ export const STATUS_LABELS: Record<MenuItemStatus, string> = {
 };
 
 export const STATUS_CLASSES: Record<MenuItemStatus, string> = {
+  not_tried: "status-not-tried",
   favorite: "status-favorite",
   liked: "status-liked",
   neutral: "status-neutral",

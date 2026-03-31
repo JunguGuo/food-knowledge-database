@@ -5,7 +5,7 @@ A local-first personal food intelligence system for managing restaurant and menu
 ## What It Does
 
 - Track restaurants and menu items you've tried across multiple cities
-- Record ratings (1-5 stars), statuses (favorite/liked/neutral/avoid/want to try), notes, tags, and prices
+- Record ratings (1-5 stars), statuses (not tried/favorite/liked/neutral/avoid/want to try), notes, descriptions, tags, and prices
 - Filter and search your knowledge by cuisine, label, rating, status, and more
 - Dashboard with top-rated restaurants, best dishes, want-to-try items, and recent updates
 - Import/export your entire database as JSON for backup and portability
@@ -101,9 +101,10 @@ app/src/
 | name | string | Required |
 | category | string | e.g. Main, Appetizer, Dim Sum |
 | rating | number \| null | 1-5 scale |
-| status | enum | `favorite` \| `liked` \| `neutral` \| `avoid` \| `want_to_try` |
+| status | enum | `not_tried` \| `favorite` \| `liked` \| `neutral` \| `avoid` \| `want_to_try` |
 | tags | string[] | e.g. Spicy, Comfort, Vegetarian |
 | notes | string | Free-text |
+| description | string | Detailed info about the dish (optional) |
 | price | number \| null | Optional |
 | dateAdded | string | ISO timestamp |
 | lastUpdated | string | ISO timestamp |
@@ -129,9 +130,12 @@ app/src/
 ### Restaurant Detail (`/restaurants/[id]`)
 - Restaurant info summary with rating, tags, labels, notes
 - Edit and delete restaurant
-- Menu items table with inline status badges, ratings, and actions
+- **Two view modes for menu items:**
+  - **List view** — table with columns for item, category, rating, status, tags, notes, and price
+  - **Category view** — items grouped by category in a card grid with a sticky sidebar for quick navigation between categories; clicking a category scrolls to that section
+- Toggle between views via list/grid icons
 - Filter menu items by status (All, Favorites, Avoid)
-- Search menu items by name
+- Descriptions shown as subdued text on category view cards when available
 - Add Menu Item button
 
 ### Menu Items (`/menu-items`)
@@ -172,7 +176,7 @@ The app's visual design is based on the prototype file `food-knowledge-db.html` 
 - Spacing rhythm and typography scale (Newsreader for display, Outfit for body)
 - Color palette (warm neutrals with gold accent)
 - Card, form, and component styling
-- Status colors (orange for favorite, green for liked, gray for neutral, red for avoid, blue for want-to-try)
+- Status colors (orange for favorite, green for liked, gray for neutral, light gray for not tried, red for avoid, blue for want-to-try)
 
 ## Design Decisions and Deviations from Original Spec
 
