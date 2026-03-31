@@ -114,7 +114,10 @@ export default function RestaurantsPage() {
             <Link href={`/restaurants/${r.id}`} key={r.id} className="card">
               <div className="card-header">
                 <div className="card-title">{r.name}</div>
-                <RatingDisplay value={r.overallRating} showValue />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {r.priceRange && <span className="price-range-display">{"$".repeat(r.priceRange)}</span>}
+                  <RatingDisplay value={r.overallRating} showValue />
+                </div>
               </div>
               <div className="card-meta">
                 {/* Show city badge only when viewing all cities */}

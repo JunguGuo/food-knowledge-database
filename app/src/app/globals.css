@@ -1750,6 +1750,14 @@ select.form-input { cursor: pointer; }
   font-size: 14px;
 }
 
+/* Price Range */
+.price-range-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--status-liked);
+  letter-spacing: -0.5px;
+}
+
 /* Toolbar select dropdowns */
 .toolbar-select {
   appearance: none;

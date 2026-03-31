@@ -31,7 +31,7 @@ export default function RestaurantDetailPage() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "restaurant" | "item"; id: string } | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "category">("list");
+  const [viewMode, setViewMode] = useState<"list" | "category">("category");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -98,6 +98,7 @@ export default function RestaurantDetailPage() {
 
       <div className="detail-meta">
         <RatingDisplay value={restaurant.overallRating} showValue />
+        {restaurant.priceRange && <span className="price-range-display">{"$".repeat(restaurant.priceRange)}</span>}
         {restaurant.city && <span className="city-badge">📍 {restaurant.city}</span>}
         {restaurant.cuisineTags.map((t) => <span key={t} className="tag">{t}</span>)}
         {restaurant.labels.map((l) => <LabelPill key={l} label={l} />)}

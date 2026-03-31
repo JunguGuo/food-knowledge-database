@@ -89,6 +89,7 @@ app/src/
 | cuisineTags | string[] | e.g. Chinese, Thai, Szechuan |
 | labels | string[] | e.g. Spicy, Comfort, Reliable |
 | overallRating | number \| null | 1-5 scale |
+| priceRange | number \| null | 1-4 scale, displayed as $ signs |
 | notes | string | Free-text impressions |
 | location | string | Optional address/district |
 | latitude | number \| null | GPS latitude for map view |
@@ -137,8 +138,9 @@ app/src/
 - Edit and delete restaurant
 - **Two view modes for menu items:**
   - **List view** — table with columns for item, category, rating, status, tags, notes, and price
-  - **Category view** — items grouped by category in a card grid with a sticky sidebar for quick navigation between categories; clicking a category scrolls to that section. Edit/delete actions appear as icon-only buttons (pen/trash) on hover in the bottom-right corner of each card
+  - **Category view** (default) — items grouped by category in a card grid with a sticky sidebar for quick navigation between categories; clicking a category scrolls to that section. Edit/delete actions appear as icon-only buttons (pen/trash) on hover in the bottom-right corner of each card
 - Toggle between views via list/grid icons
+- Price range displayed as dollar signs ($–$$$$) alongside the star rating
 - **Dropdown filters** for status, tags, and rating (minimum threshold, e.g. "4★+" shows 4- and 5-star items)
 - Descriptions shown as subdued text on category view cards when available
 - Add Menu Item button

@@ -45,6 +45,7 @@ interface JsonRestaurant {
   cuisineTags: string[];
   labels: string[];
   overallRating: number | null;
+  priceRange: number | null;
   notes: string;
   location: string;
   latitude: number | null;
@@ -94,6 +95,11 @@ function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string
   if (obj.overallRating !== undefined && obj.overallRating !== null) {
     if (typeof obj.overallRating !== "number" || obj.overallRating < 1 || obj.overallRating > 5) {
       errors.push('"overallRating" must be a number between 1 and 5, or null');
+    }
+  }
+  if (obj.priceRange !== undefined && obj.priceRange !== null) {
+    if (typeof obj.priceRange !== "number" || obj.priceRange < 1 || obj.priceRange > 4) {
+      errors.push('"priceRange" must be a number between 1 and 4, or null');
     }
   }
   if (obj.notes !== undefined && typeof obj.notes !== "string") {
@@ -159,6 +165,7 @@ function validateJsonRestaurant(data: unknown): { valid: boolean; errors: string
       cuisineTags: (obj.cuisineTags as string[] | undefined) ?? [],
       labels: (obj.labels as string[] | undefined) ?? [],
       overallRating: (obj.overallRating as number | null | undefined) ?? null,
+      priceRange: (obj.priceRange as number | null | undefined) ?? null,
       notes: (obj.notes as string | undefined) ?? "",
       location: (obj.location as string | undefined) ?? "",
       latitude: (obj.latitude as number | null | undefined) ?? null,
@@ -186,6 +193,7 @@ interface RestaurantFormProps {
     cuisineTags: string[];
     labels: string[];
     overallRating: number | null;
+    priceRange: number | null;
     notes: string;
     location: string;
     latitude: number | null;
@@ -197,6 +205,7 @@ interface RestaurantFormProps {
     cuisineTags: string[];
     labels: string[];
     overallRating: number | null;
+    priceRange: number | null;
     notes: string;
     location: string;
     latitude: number | null;
@@ -217,6 +226,7 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
   const [cuisineTags, setCuisineTags] = useState<string[]>(restaurant?.cuisineTags ?? []);
   const [labels, setLabels] = useState<string[]>(restaurant?.labels ?? []);
   const [overallRating, setOverallRating] = useState<number | null>(restaurant?.overallRating ?? null);
+  const [priceRange, setPriceRange] = useState<number | null>(restaurant?.priceRange ?? null);
   const [notes, setNotes] = useState(restaurant?.notes ?? "");
   const [location, setLocation] = useState(restaurant?.location ?? "");
   const [latitude, setLatitude] = useState(restaurant?.latitude?.toString() ?? "");
@@ -278,7 +288,7 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
     }
     const lat = latitude.trim() ? parseFloat(latitude) : null;
     const lng = longitude.trim() ? parseFloat(longitude) : null;
-    onSave({ name: name.trim(), city: finalCity, cuisineTags, labels, overallRating, notes, location, latitude: lat, longitude: lng });
+    onSave({ name: name.trim(), city: finalCity, cuisineTags, labels, overallRating, priceRange, notes, location, latitude: lat, longitude: lng });
   }
 
   function handleJsonChange(text: string) {
@@ -394,6 +404,31 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
                 <div className="form-group">
                   <label className="form-label">Overall Rating</label>
                   <RatingInput value={overallRating} onChange={setOverallRating} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Price Range</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[1, 2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      style={{
+                        padding: "5px 12px",
+                        border: `1px solid ${priceRange === n ? "var(--status-liked)" : "var(--border-default)"}`,
+                        borderRadius: "var(--radius-sm)",
+                        background: priceRange === n ? "var(--status-liked-bg)" : "var(--bg-surface)",
+                        color: priceRange === n ? "var(--status-liked)" : "var(--text-tertiary)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setPriceRange(priceRange === n ? null : n)}
+                    >
+                      {"$".repeat(n)}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="form-row">
