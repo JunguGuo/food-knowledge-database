@@ -10,6 +10,9 @@ export { DEFAULT_CITIES } from "./appDoc";
 // preference, not knowledge-base data, so it stays in localStorage.
 const SELECTED_CITY_KEY = "food-knowledge-city";
 
+// On a device with no saved preference, start filtered to this city.
+const DEFAULT_SELECTED_CITY = "Cleveland";
+
 interface CityContextType {
   cities: string[];
   selectedCity: string | null; // null = all cities
@@ -31,7 +34,13 @@ export function CityProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedCity = localStorage.getItem(SELECTED_CITY_KEY);
-    if (savedCity && savedCity !== "null") setSelectedCityState(savedCity);
+    if (savedCity === null) {
+      // No saved preference on this device — default to Cleveland if it exists.
+      if (getCities().includes(DEFAULT_SELECTED_CITY)) setSelectedCityState(DEFAULT_SELECTED_CITY);
+    } else if (savedCity !== "null") {
+      setSelectedCityState(savedCity);
+    }
+    // savedCity === "null" means the user explicitly picked All Cities — keep it.
     // Keep the city list in sync with store changes (e.g. data import).
     return subscribe(() => setCities([...getCities()]));
   }, []);
