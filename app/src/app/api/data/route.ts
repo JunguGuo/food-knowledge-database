@@ -34,6 +34,14 @@ export async function PUT(req: NextRequest) {
   if (!b || !Array.isArray(b.restaurants) || !Array.isArray(b.menuItems)) {
     return NextResponse.json({ error: "invalid document" }, { status: 400 });
   }
-  await writeDoc(normalizeDoc(b));
+  try {
+    await writeDoc(normalizeDoc(b));
+  } catch (err) {
+    // e.g. no persistent database configured in production.
+    return NextResponse.json(
+      { error: (err as Error).message || "Failed to save" },
+      { status: 503 }
+    );
+  }
   return NextResponse.json({ ok: true });
 }

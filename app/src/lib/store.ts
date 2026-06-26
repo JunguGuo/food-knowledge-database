@@ -2,6 +2,7 @@
 
 import { Restaurant, MenuItem, AppData } from "./types";
 import { AppDoc, buildSeedDoc, normalizeDoc } from "./appDoc";
+import { showToast } from "@/components/Toast";
 
 // ---------------------------------------------------------------------------
 // In-memory document cache.
@@ -48,16 +49,31 @@ function persist() {
   saveTimer = setTimeout(flush, 400);
 }
 
+let warnedSaveFailure = false;
+
 async function flush() {
   saveTimer = null;
   if (!pending) return;
   pending = false;
   try {
-    await fetch("/api/data", {
+    const res = await fetch("/api/data", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cache),
     });
+    if (!res.ok) {
+      // Server rejected the save (e.g. 503 = no database configured). Surface
+      // it once so the user knows their changes aren't being persisted.
+      pending = true;
+      if (!warnedSaveFailure) {
+        warnedSaveFailure = true;
+        let detail = "";
+        try { detail = (await res.json()).error ?? ""; } catch { /* ignore */ }
+        showToast(detail || "Changes aren't being saved to the server.");
+      }
+      return;
+    }
+    warnedSaveFailure = false;
   } catch {
     // Network hiccup — mark dirty again so the next change retries.
     pending = true;
