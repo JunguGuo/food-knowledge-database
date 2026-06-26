@@ -44,6 +44,11 @@ export function Sidebar() {
     return pathname.startsWith(href.split("?")[0]);
   }
 
+  async function handleLogout() {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
+
   const cityOptions = [{ value: null, label: "All Cities" }, ...cities.map((c) => ({ value: c, label: c }))];
 
   return (
@@ -101,6 +106,14 @@ export function Sidebar() {
         <div className="sidebar-profile">
           <div className="sidebar-avatar">J</div>
           <div className="sidebar-profile-name">Jungu</div>
+          <button
+            onClick={handleLogout}
+            title="Log out"
+            aria-label="Log out"
+            style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "inherit", opacity: 0.55, padding: 4, display: "flex" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
       </div>
     </nav>

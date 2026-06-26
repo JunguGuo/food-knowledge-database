@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
-import { ToastProvider } from "@/components/Toast";
-import { CityProvider } from "@/lib/cityContext";
-import { TagProvider } from "@/lib/tagContext";
 
 export const metadata: Metadata = {
   title: "Food Knowledge Database",
@@ -21,21 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
-        <CityProvider>
-        <TagProvider>
-          <div className="app-shell">
-            <Sidebar />
-            <div className="main-area">
-              <div className="content-area">
-                {children}
-              </div>
-            </div>
-          </div>
-          <ToastProvider />
-        </TagProvider>
-        </CityProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

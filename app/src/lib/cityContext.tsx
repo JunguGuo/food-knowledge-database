@@ -1,10 +1,13 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getCities, setCitiesStore, subscribe } from "./store";
 
-export const DEFAULT_CITIES = ["Cleveland", "Chicago", "New York", "Los Angeles", "San Francisco"];
+// Re-exported for backward compatibility; the canonical defaults live in appDoc.
+export { DEFAULT_CITIES } from "./appDoc";
 
-const CITIES_KEY = "food-knowledge-cities";
+// Per-device view preference — which city is currently selected. This is a UI
+// preference, not knowledge-base data, so it stays in localStorage.
 const SELECTED_CITY_KEY = "food-knowledge-city";
 
 interface CityContextType {
@@ -15,27 +18,22 @@ interface CityContextType {
 }
 
 const CityContext = createContext<CityContextType>({
-  cities: DEFAULT_CITIES,
+  cities: [],
   selectedCity: null,
   setSelectedCity: () => {},
   addCity: () => {},
 });
 
 export function CityProvider({ children }: { children: ReactNode }) {
-  const [cities, setCities] = useState<string[]>(DEFAULT_CITIES);
+  // The store is already hydrated by DataProvider before this mounts.
+  const [cities, setCities] = useState<string[]>(() => getCities());
   const [selectedCity, setSelectedCityState] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const savedCities = localStorage.getItem(CITIES_KEY);
     const savedCity = localStorage.getItem(SELECTED_CITY_KEY);
-    if (savedCities) {
-      try { setCities(JSON.parse(savedCities)); } catch {}
-    }
-    if (savedCity && savedCity !== "null") {
-      setSelectedCityState(savedCity);
-    }
-    setHydrated(true);
+    if (savedCity && savedCity !== "null") setSelectedCityState(savedCity);
+    // Keep the city list in sync with store changes (e.g. data import).
+    return subscribe(() => setCities([...getCities()]));
   }, []);
 
   function setSelectedCity(city: string | null) {
@@ -48,10 +46,8 @@ export function CityProvider({ children }: { children: ReactNode }) {
     if (!trimmed || cities.includes(trimmed)) return;
     const updated = [...cities, trimmed];
     setCities(updated);
-    localStorage.setItem(CITIES_KEY, JSON.stringify(updated));
+    setCitiesStore(updated);
   }
-
-  if (!hydrated) return null;
 
   return (
     <CityContext.Provider value={{ cities, selectedCity, setSelectedCity, addCity }}>

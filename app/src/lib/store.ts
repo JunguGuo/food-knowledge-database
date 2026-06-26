@@ -1,168 +1,243 @@
 "use client";
 
 import { Restaurant, MenuItem, AppData } from "./types";
-import { seedRestaurants, seedMenuItems } from "./seed";
+import { AppDoc, buildSeedDoc, normalizeDoc } from "./appDoc";
 
-const STORAGE_KEY = "food-knowledge-db";
-// Bump this when the data schema changes to force a reset to fresh seed data.
-const DB_VERSION = 5;
-const DB_VERSION_KEY = "food-knowledge-db-version";
+// ---------------------------------------------------------------------------
+// In-memory document cache.
+//
+// The whole knowledge base lives in `cache` as a single object. The app is
+// gated on initial load (see DataProvider) so by the time any page renders the
+// cache has been hydrated from the cloud. Reads stay synchronous — exactly the
+// API the UI was written against — and every write schedules a debounced PUT
+// that persists the full document back to the server.
+// ---------------------------------------------------------------------------
+
+let cache: AppDoc = buildSeedDoc();
+let hydrated = false;
+const listeners = new Set<() => void>();
+
+export function hydrate(doc: Partial<AppDoc>) {
+  cache = normalizeDoc(doc);
+  hydrated = true;
+  emit();
+}
+
+export function isHydrated(): boolean {
+  return hydrated;
+}
+
+export function subscribe(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function emit() {
+  for (const fn of listeners) fn();
+}
+
+// --- Persistence (debounced) ----------------------------------------------
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pending = false;
+
+function persist() {
+  emit();
+  pending = true;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 400);
+}
+
+async function flush() {
+  saveTimer = null;
+  if (!pending) return;
+  pending = false;
+  try {
+    await fetch("/api/data", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cache),
+    });
+  } catch {
+    // Network hiccup — mark dirty again so the next change retries.
+    pending = true;
+  }
+}
+
+// Best-effort flush when the tab is hidden/closed so a quick edit isn't lost
+// inside the debounce window.
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => {
+    if (!pending) return;
+    pending = false;
+    try {
+      navigator.sendBeacon(
+        "/api/data",
+        new Blob([JSON.stringify(cache)], { type: "application/json" })
+      );
+    } catch {
+      /* ignore */
+    }
+  });
+}
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-function loadData(): AppData {
-  if (typeof window === "undefined") {
-    return { restaurants: seedRestaurants, menuItems: seedMenuItems };
-  }
-  const storedVersion = parseInt(localStorage.getItem(DB_VERSION_KEY) ?? "0");
-  if (storedVersion < DB_VERSION) {
-    const initial: AppData = { restaurants: seedRestaurants, menuItems: seedMenuItems };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-    localStorage.setItem(DB_VERSION_KEY, String(DB_VERSION));
-    return initial;
-  }
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    const initial: AppData = { restaurants: seedRestaurants, menuItems: seedMenuItems };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-    return initial;
-  }
-  return JSON.parse(raw);
-}
-
-function saveData(data: AppData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
 // Restaurants
 export function getRestaurants(): Restaurant[] {
-  return loadData().restaurants;
+  return cache.restaurants;
 }
 
 export function getRestaurantById(id: string): Restaurant | undefined {
-  return loadData().restaurants.find((r) => r.id === id);
+  return cache.restaurants.find((r) => r.id === id);
 }
 
 export function createRestaurant(input: Omit<Restaurant, "id" | "dateAdded" | "lastUpdated">): Restaurant {
-  const data = loadData();
   const now = new Date().toISOString();
   const restaurant: Restaurant = { ...input, id: generateId(), dateAdded: now, lastUpdated: now };
-  data.restaurants.push(restaurant);
-  saveData(data);
+  cache.restaurants.push(restaurant);
+  persist();
   return restaurant;
 }
 
 export function updateRestaurant(id: string, updates: Partial<Omit<Restaurant, "id" | "dateAdded">>): Restaurant | undefined {
-  const data = loadData();
-  const idx = data.restaurants.findIndex((r) => r.id === id);
+  const idx = cache.restaurants.findIndex((r) => r.id === id);
   if (idx === -1) return undefined;
-  data.restaurants[idx] = { ...data.restaurants[idx], ...updates, lastUpdated: new Date().toISOString() };
-  saveData(data);
-  return data.restaurants[idx];
+  cache.restaurants[idx] = { ...cache.restaurants[idx], ...updates, lastUpdated: new Date().toISOString() };
+  persist();
+  return cache.restaurants[idx];
 }
 
 export function deleteRestaurant(id: string): boolean {
-  const data = loadData();
-  const before = data.restaurants.length;
-  data.restaurants = data.restaurants.filter((r) => r.id !== id);
-  data.menuItems = data.menuItems.filter((m) => m.restaurantId !== id);
-  saveData(data);
-  return data.restaurants.length < before;
+  const before = cache.restaurants.length;
+  cache.restaurants = cache.restaurants.filter((r) => r.id !== id);
+  cache.menuItems = cache.menuItems.filter((m) => m.restaurantId !== id);
+  persist();
+  return cache.restaurants.length < before;
 }
 
 // Menu Items
 export function getMenuItems(): MenuItem[] {
-  return loadData().menuItems;
+  return cache.menuItems;
 }
 
 export function getMenuItemsByRestaurant(restaurantId: string): MenuItem[] {
-  return loadData().menuItems.filter((m) => m.restaurantId === restaurantId);
+  return cache.menuItems.filter((m) => m.restaurantId === restaurantId);
 }
 
 export function getMenuItemById(id: string): MenuItem | undefined {
-  return loadData().menuItems.find((m) => m.id === id);
+  return cache.menuItems.find((m) => m.id === id);
 }
 
 export function createMenuItem(input: Omit<MenuItem, "id" | "dateAdded" | "lastUpdated">): MenuItem {
-  const data = loadData();
   const now = new Date().toISOString();
   const item: MenuItem = { ...input, id: generateId(), dateAdded: now, lastUpdated: now };
-  data.menuItems.push(item);
-  saveData(data);
+  cache.menuItems.push(item);
+  persist();
   return item;
 }
 
 export function updateMenuItem(id: string, updates: Partial<Omit<MenuItem, "id" | "dateAdded">>): MenuItem | undefined {
-  const data = loadData();
-  const idx = data.menuItems.findIndex((m) => m.id === id);
+  const idx = cache.menuItems.findIndex((m) => m.id === id);
   if (idx === -1) return undefined;
-  data.menuItems[idx] = { ...data.menuItems[idx], ...updates, lastUpdated: new Date().toISOString() };
-  saveData(data);
-  return data.menuItems[idx];
+  cache.menuItems[idx] = { ...cache.menuItems[idx], ...updates, lastUpdated: new Date().toISOString() };
+  persist();
+  return cache.menuItems[idx];
 }
 
 export function deleteMenuItem(id: string): boolean {
-  const data = loadData();
-  const before = data.menuItems.length;
-  data.menuItems = data.menuItems.filter((m) => m.id !== id);
-  saveData(data);
-  return data.menuItems.length < before;
+  const before = cache.menuItems.length;
+  cache.menuItems = cache.menuItems.filter((m) => m.id !== id);
+  persist();
+  return cache.menuItems.length < before;
+}
+
+// City list (synced as part of the document)
+export function getCities(): string[] {
+  return cache.cities;
+}
+
+export function setCitiesStore(cities: string[]) {
+  cache.cities = cities;
+  persist();
+}
+
+// Tag lists (synced as part of the document)
+export function getCuisineTagsStore(): string[] {
+  return cache.cuisineTags;
+}
+export function getRestaurantLabelsStore(): string[] {
+  return cache.restaurantLabels;
+}
+export function getMenuItemTagsStore(): string[] {
+  return cache.menuItemTags;
+}
+export function setCuisineTagsStore(tags: string[]) {
+  cache.cuisineTags = tags;
+  persist();
+}
+export function setRestaurantLabelsStore(tags: string[]) {
+  cache.restaurantLabels = tags;
+  persist();
+}
+export function setMenuItemTagsStore(tags: string[]) {
+  cache.menuItemTags = tags;
+  persist();
 }
 
 // Bulk tag rename
 export function renameTagInRestaurants(field: "cuisineTags" | "labels", oldTag: string, newTag: string) {
-  const data = loadData();
   let changed = 0;
-  for (const r of data.restaurants) {
+  for (const r of cache.restaurants) {
     const idx = r[field].indexOf(oldTag);
     if (idx !== -1) {
       r[field][idx] = newTag;
       changed++;
     }
   }
-  if (changed > 0) saveData(data);
+  if (changed > 0) persist();
   return changed;
 }
 
 export function renameTagInMenuItems(oldTag: string, newTag: string) {
-  const data = loadData();
   let changed = 0;
-  for (const m of data.menuItems) {
+  for (const m of cache.menuItems) {
     const idx = m.tags.indexOf(oldTag);
     if (idx !== -1) {
       m.tags[idx] = newTag;
       changed++;
     }
   }
-  if (changed > 0) saveData(data);
+  if (changed > 0) persist();
   return changed;
 }
 
 // Import / Export
 export function exportData(): AppData {
-  return loadData();
+  return { restaurants: cache.restaurants, menuItems: cache.menuItems };
 }
 
 export function importData(incoming: AppData, mode: "replace" | "merge" = "merge") {
   if (mode === "replace") {
-    saveData(incoming);
+    cache.restaurants = incoming.restaurants;
+    cache.menuItems = incoming.menuItems;
+    persist();
     return;
   }
-  const data = loadData();
-  const existingRestIds = new Set(data.restaurants.map((r) => r.id));
-  const existingItemIds = new Set(data.menuItems.map((m) => m.id));
+  const existingRestIds = new Set(cache.restaurants.map((r) => r.id));
+  const existingItemIds = new Set(cache.menuItems.map((m) => m.id));
   for (const r of incoming.restaurants) {
-    if (!existingRestIds.has(r.id)) data.restaurants.push(r);
+    if (!existingRestIds.has(r.id)) cache.restaurants.push(r);
   }
   for (const m of incoming.menuItems) {
-    if (!existingItemIds.has(m.id)) data.menuItems.push(m);
+    if (!existingItemIds.has(m.id)) cache.menuItems.push(m);
   }
-  saveData(data);
+  persist();
 }
 
 export function clearAllData() {
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(DB_VERSION_KEY);
+  cache = buildSeedDoc();
+  persist();
 }
