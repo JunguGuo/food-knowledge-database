@@ -16,12 +16,12 @@ A local-first personal food intelligence system for managing restaurant and menu
 - **Framework:** Next.js 16 (App Router) with React 19 and TypeScript
 - **Styling:** Tailwind CSS 4 with custom design tokens (see `globals.css`)
 - **Maps:** Leaflet + react-leaflet with OpenStreetMap tiles (no API key required)
-- **Persistence:** Cloud-synced JSON document via Next.js API routes — **Upstash Redis** in production, with a local-file fallback (`app/.data/store.json`) for dev
+- **Persistence:** Cloud-synced JSON document via Next.js API routes — **Redis** (via `REDIS_URL`, using `node-redis`) in production, with a local-file fallback (`app/.data/store.json`) for dev
 - **Auth:** single shared password (`APP_PASSWORD`) enforced by a `proxy` (middleware)
 - **State Management:** React Context API (CityProvider, TagProvider) over an in-memory store hydrated from the cloud on startup
 - **Dev Server:** Turbopack (`next dev --turbopack`)
 
-No external UI libraries. See [DEPLOY.md](DEPLOY.md) for deploying to Vercel + Upstash.
+No external UI libraries. See [DEPLOY.md](DEPLOY.md) for deploying to Vercel + Redis.
 
 ## Getting Started
 
@@ -164,7 +164,7 @@ app/src/
 
 ## Data Persistence
 
-The entire knowledge base — restaurants, menu items, cities, and tag lists — is stored as a single JSON document under the key `food-knowledge-db` (Upstash Redis in production, or `app/.data/store.json` as a local-file fallback). The client loads it once on startup via `GET /api/data`, holds it in memory, and debounce-saves the whole document back via `PUT /api/data` on every change.
+The entire knowledge base — restaurants, menu items, cities, and tag lists — is stored as a single JSON document under the key `food-knowledge-db` (Redis via `REDIS_URL` in production, or `app/.data/store.json` as a local-file fallback). The client loads it once on startup via `GET /api/data`, holds it in memory, and debounce-saves the whole document back via `PUT /api/data` on every change.
 
 The only per-device state kept in `localStorage` is the currently selected city (a UI preference), so each device can browse a different city while sharing the same data.
 
