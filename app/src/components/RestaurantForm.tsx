@@ -37,6 +37,47 @@ Rating: 1-5 or null
 Price: number or null
 Fields "menuItems", "labels", "notes", "location", "latitude", "longitude", "overallRating", "description" are optional`;
 
+// Prompt the user copies into any AI chat alongside a photo of the menu. It
+// describes the exact schema validateJsonRestaurant() accepts so the JSON the
+// AI returns can be pasted straight back and imported.
+const MENU_TO_JSON_PROMPT = `You convert restaurant menus into structured JSON.
+
+I'm attaching one or more photos of a restaurant menu. Read the menu and return a SINGLE JSON object that exactly matches the schema below. Output ONLY the JSON — no explanations, no markdown code fences, no comments.
+
+Schema (one JSON object):
+{
+  "name": string,             // restaurant name from the menu; if not shown, use "New Restaurant"
+  "city": string,             // city if printed on the menu, otherwise "Unknown"
+  "cuisineTags": string[],    // infer from the menu, e.g. ["Chinese","Szechuan"]; or []
+  "labels": string[],         // leave as []
+  "overallRating": null,      // always null — I rate it myself later
+  "priceRange": number|null,  // 1-4 ($ to $$$$) estimated from the prices, or null
+  "notes": "",
+  "location": string,         // street address if printed on the menu, otherwise ""
+  "latitude": null,
+  "longitude": null,
+  "menuItems": [
+    {
+      "name": string,         // exact dish name as printed
+      "category": string,     // the menu section heading (e.g. "Appetizers","Mains","Drinks"); "" if none
+      "rating": null,         // always null
+      "status": "not_tried",  // always "not_tried"
+      "tags": string[],       // only dietary/spice markers explicitly shown (e.g. "Spicy","Vegetarian","Vegan","Gluten-free"); otherwise []
+      "notes": "",
+      "description": string,  // the menu's own description of the dish, or "" if none
+      "price": number|null    // numeric price with no currency symbol (e.g. 15.99), or null if not shown
+    }
+  ]
+}
+
+Rules:
+- The output must be valid JSON: double quotes only, no trailing commas, no comments.
+- Include EVERY item on the menu and keep the menu's section groupings as "category".
+- Use the exact dish names and prices as printed; strip currency symbols (e.g. "$15.99" becomes 15.99).
+- Do NOT invent ratings, statuses, or personal notes — leave those at the defaults above.
+- If a value is unknown, use the default shown ("", null, or []).
+- Return the JSON only.`;
+
 type TabMode = "form" | "json";
 
 interface JsonRestaurant {
@@ -263,6 +304,25 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
   const [jsonErrors, setJsonErrors] = useState<string[]>([]);
   const [jsonValid, setJsonValid] = useState(false);
   const [jsonParsed, setJsonParsed] = useState<JsonRestaurant | null>(null);
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  async function handleCopyPrompt() {
+    try {
+      await navigator.clipboard.writeText(MENU_TO_JSON_PROMPT);
+    } catch {
+      // Fallback for browsers/contexts without the async clipboard API.
+      const ta = document.createElement("textarea");
+      ta.value = MENU_TO_JSON_PROMPT;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* ignore */ }
+      document.body.removeChild(ta);
+    }
+    setPromptCopied(true);
+    setTimeout(() => setPromptCopied(false), 2000);
+  }
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -486,6 +546,43 @@ export function RestaurantForm({ restaurant, defaultCity, onSave, onSaveWithMenu
         ) : (
           <div>
             <div className="modal-body">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "12px 14px",
+                  marginBottom: 14,
+                  border: "1px solid var(--border-default)",
+                  borderRadius: "var(--radius-md, 10px)",
+                  background: "var(--bg-subtle, var(--bg-surface))",
+                }}
+              >
+                <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--text-tertiary)" }}>
+                  <strong style={{ color: "var(--text-secondary)" }}>📸 Menu photo → JSON.</strong>{" "}
+                  Copy this prompt into ChatGPT, Claude, or any AI chat, attach a photo of the menu,
+                  and paste the JSON it returns below.
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCopyPrompt}
+                  style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                >
+                  {promptCopied ? (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      Copy AI prompt
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="form-group">
                 <label className="form-label">Paste Restaurant JSON</label>
                 <textarea
