@@ -11,6 +11,10 @@ export function Sidebar() {
   const { cities, selectedCity, setSelectedCity } = useCityContext();
   const [counts, setCounts] = useState({ restaurants: 0, menuItems: 0, favorites: 0, avoid: 0, wantToTry: 0 });
   const [cityOpen, setCityOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes (e.g. a nav link tap).
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   useEffect(() => {
     const restaurants = getRestaurants().filter((r) => !selectedCity || r.city === selectedCity);
@@ -52,7 +56,22 @@ export function Sidebar() {
   const cityOptions = [{ value: null, label: "All Cities" }, ...cities.map((c) => ({ value: c, label: c }))];
 
   return (
-    <nav className="sidebar">
+    <>
+      {/* Mobile-only top bar with a hamburger to open the drawer */}
+      <header className="mobile-topbar">
+        <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <Link href="/" className="mobile-topbar-logo">
+          <span className="mobile-topbar-logo-icon">◈</span>
+          Food Knowledge
+        </Link>
+      </header>
+
+      {drawerOpen && <div className="sidebar-backdrop" onClick={() => setDrawerOpen(false)} />}
+
+      <nav className={`sidebar${drawerOpen ? " open" : ""}`}>
+      <button className="sidebar-close" onClick={() => setDrawerOpen(false)} aria-label="Close menu">×</button>
       <Link href="/" className="sidebar-logo" style={{ textDecoration: "none" }}>
         <div className="sidebar-logo-icon">◈</div>
         <div className="sidebar-logo-text">Food Knowledge</div>
@@ -74,7 +93,7 @@ export function Sidebar() {
               <div
                 key={label}
                 className={`sidebar-city-option${selectedCity === value ? " active" : ""}`}
-                onClick={() => { setSelectedCity(value); setCityOpen(false); }}
+                onClick={() => { setSelectedCity(value); setCityOpen(false); setDrawerOpen(false); }}
               >
                 {label}
                 {selectedCity === value && <span className="sidebar-city-option-check">✓</span>}
@@ -117,5 +136,6 @@ export function Sidebar() {
         </div>
       </div>
     </nav>
+    </>
   );
 }
