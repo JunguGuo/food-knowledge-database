@@ -70,6 +70,40 @@ function CitySwitcher() {
           </button>
         )}
       </div>
+
+      {/* Mobile: compact dropdown instead of wrapping pills */}
+      <div className="city-select-wrap">
+        {showAdd ? (
+          <form className="city-add-inline" onSubmit={handleAddSubmit} style={{ flex: 1 }}>
+            <input
+              className="city-add-input"
+              autoFocus
+              value={newCity}
+              onChange={(e) => setNewCity(e.target.value)}
+              placeholder="City name…"
+              onKeyDown={(e) => { if (e.key === "Escape") { setShowAdd(false); setNewCity(""); } }}
+            />
+            <button type="submit" className="btn btn-primary" style={{ padding: "6px 12px", fontSize: 12 }}>Add</button>
+            <button type="button" className="btn btn-ghost" style={{ padding: "6px 8px", fontSize: 12 }} onClick={() => { setShowAdd(false); setNewCity(""); }}>Cancel</button>
+          </form>
+        ) : (
+          <select
+            className="city-select"
+            value={selectedCity ?? "__all__"}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "__add__") { setShowAdd(true); return; }
+              setSelectedCity(v === "__all__" ? null : v);
+            }}
+          >
+            <option value="__all__">All Cities</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+            <option value="__add__">+ Add city…</option>
+          </select>
+        )}
+      </div>
     </div>
   );
 }

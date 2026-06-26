@@ -1560,6 +1560,29 @@ select.form-input { cursor: pointer; }
   gap: 6px;
 }
 
+/* Mobile-only compact dropdown for the dashboard city switcher (hidden on desktop) */
+.city-select-wrap { display: none; }
+
+.city-select {
+  flex: 1;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+}
+
+.city-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
 .city-add-input {
   padding: 5px 10px;
   border: 1px solid var(--accent);
@@ -1914,6 +1937,11 @@ select.form-input { cursor: pointer; }
 
   /* Push content below the fixed top bar */
   .content-area { padding-top: 52px; }
+
+  /* Dashboard city switcher: dropdown instead of wrapping pills */
+  .city-switcher { padding: 10px 14px; margin-bottom: 18px; gap: 12px; flex-wrap: nowrap; }
+  .city-tabs { display: none; }
+  .city-select-wrap { display: flex; flex: 1; align-items: center; min-width: 0; }
 
   /* Tighter spacing and full-width controls */
   .screen { padding: 18px 16px 56px; }
